@@ -1,0 +1,80 @@
+---
+title: "Director Mode"
+description: "Plan, visualise, and approve video campaigns before a single frame renders."
+surface: studio
+triggers: ["director", "storyboard", "brand agent", "keyframes", "grid"]
+difficulty: intermediate
+estimatedMinutes: 8
+---
+
+# Director Mode
+
+Director Mode is Varosity's pre-production layer. Instead of jumping straight into generation, you give a brand agent a brief, let the Director plan a full shoot (premise, visual style, characters, locations, shots, audio, continuity), and review the result as a storyboard before approving a render.
+
+## Key concepts
+
+| Concept | What it is |
+|---|---|
+| **Storyboard** | A document that holds the brief, the Director's 8-section plan, and the visual output (grid or keyframes). |
+| **Grid mode** | One composite image showing all shots on a single sheet. Fast to generate; good for composition and layout review. |
+| **Keyframes mode** | One still per shot. Slower but gives you the exact frame that will be used as the seed for video generation. |
+| **Gate** | The approval step. You approve/revise/reject from the Storyboard Canvas or the Operator iOS app. |
+
+## Workflow
+
+```
+Brief  →  Director plan  →  Grid or Keyframes  →  Approve  →  Render  →  Studio
+```
+
+1. **Create a brand agent** at `/app/agents/new`. Set the identity, voice, visual system, and cadence.
+2. **Open a project** and click the **Storyboard** tab in the top bar (or the Director CTA if you're starting from an empty project).
+3. **Write a brief** — one or two sentences is enough. The Director fills in the rest.
+4. **Review the plan** — expand any of the 8 sections (Premise, Visual Style, Characters, Locations, Shots, Audio, Continuity, Mode Recommendation) and edit directly.
+5. **Generate a visual** — click **Generate grid** or switch to Keyframes mode and generate per-shot stills.
+6. **Long-press a keyframe** on iOS (or hover + click the ↺ button on web) to regenerate just that shot.
+7. **Approve** from the action row. The Director materialises the plan into a Studio project and kicks off generation.
+
+## Brand agent setup
+
+Director Mode is linked to a brand agent. The agent provides:
+
+- **Identity** — name, slug, tagline, audience, mission. The Director uses these as background context for every plan.
+- **Visual system** — default image model, aesthetic descriptors. These flow into keyframe generation prompts.
+- **Cadence & approval policy** — how often the agent runs autonomously and whether a human gate is required.
+- **Publishing** — Postiz endpoint and token for automated posting after approval.
+
+## REST API
+
+All storyboard operations are available via the REST API. Authenticate with a `vsk_*` bearer token.
+
+```bash
+# Create a storyboard
+curl -X POST https://app.varosity.com/api/v1/storyboards \
+  -H "Authorization: Bearer vsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"brand_id": "...", "brief": {"prompt": "Summer product launch"}}'
+
+# Generate keyframes
+curl -X POST https://app.varosity.com/api/v1/storyboards/{id}/keyframes \
+  -H "Authorization: Bearer vsk_..."
+
+# Approve + render
+curl -X POST https://app.varosity.com/api/v1/storyboards/{id}/render \
+  -H "Authorization: Bearer vsk_..."
+```
+
+See the full [OpenAPI spec](/docs/openapi.json) or the [Agent Guide](/agent-guide) for MCP-based workflows.
+
+## Operator iOS
+
+The Operator app shows storyboards under each brand. Tap a storyboard to see the grid or keyframes strip. Long-press any keyframe to queue a regeneration. Approve, revise, or reject from the detail screen — the same gate decision hits the REST API with an idempotency key so offline taps don't double-apply.
+
+## Tier requirements
+
+Director Mode is available on all plans during the early-access period. It is gated behind the `ff_v4_director` feature flag. Dogfood users are opted in via the `V4_DOGFOOD_USER_IDS` environment variable; everyone else gets access when the flag flips globally at the v4.0 release.
+
+## Tips
+
+- **Mode Recommendation** is auto-populated by the Director's heuristic router. Grid is suggested for lifestyle/product campaigns; Keyframes for anything with recurring talent, day-to-night progressions, or cinematic continuity.
+- If a keyframe prompt isn't landing, expand the **Shots** section and edit the `keyframe_hint` field for that shot before regenerating.
+- You can save a storyboard as a template (Action row → Save as template) to reuse the plan structure across future campaigns.
